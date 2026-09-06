@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - ข้อมูลผู้ป่วยรายเดือน</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="container wide">
@@ -74,6 +74,11 @@
     }
 
     function renderChart() {
+      if (typeof Chart === 'undefined') {
+        document.querySelector('.chart-wrap').innerHTML =
+          '<p style="color:#dc2626;">โหลดไลบรารีกราฟ (Chart.js) ไม่สำเร็จ ลองรีเฟรชหน้าใหม่ หรือตรวจสอบว่าอินเทอร์เน็ต/เครือข่ายไม่ได้บล็อก cdn.jsdelivr.net</p>';
+        return;
+      }
       const labels = allData.map(function (d) { return d.month; });
       const values = allData.map(function (d) { return Number(d.patientCount); });
       const bgColors = values.map(function (v) { return v > threshold ? '#dc2626' : '#2563eb'; });
