@@ -320,7 +320,7 @@
             <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
           </div>
 
-          <button type="submit" class="submit" id="submitBtn" disabled>บันทึกข้อมูล</button>
+          <button type="submit" class="submit" id="submitBtn">บันทึกข้อมูล</button>
           <div class="banner" id="banner" role="alert" aria-live="polite"></div>
         </form>
       </div>
@@ -393,16 +393,9 @@
       return valid;
     }
 
-    function updateSubmitState() {
-      const allValid = fields.every(function (id) {
-        const val = document.getElementById(id).value.trim();
-        return val !== '' && validateField(id);
-      });
-      document.getElementById('submitBtn').disabled = !allValid;
-    }
-
     fields.forEach(function (id) {
-      document.getElementById(id).addEventListener('input', updateSubmitState);
+      // live styling only (green/red border) — never blocks the button itself
+      document.getElementById(id).addEventListener('input', function () { validateField(id); });
       document.getElementById(id).addEventListener('blur', function () { validateField(id); });
     });
 
@@ -413,6 +406,14 @@
       const banner = document.getElementById('banner');
       banner.className = 'banner';
       banner.textContent = '';
+
+      // validate everything right here, at the moment of submit
+      const allValid = fields.every(function (id) { return validateField(id); });
+      if (!allValid) {
+        banner.className = 'banner error show';
+        banner.textContent = 'กรุณากรอกข้อมูลให้ครบและถูกต้องก่อนบันทึก';
+        return;
+      }
 
       const month = document.getElementById('month').value.trim();
       const days = document.getElementById('days').value;
@@ -456,7 +457,7 @@
         document.getElementById(id).classList.remove('valid', 'invalid');
         document.getElementById(id + 'Msg').textContent = '';
       });
-      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').disabled = false;
       document.getElementById('submitBtn').textContent = 'บันทึกข้อมูล';
       document.getElementById('month').focus();
     });
