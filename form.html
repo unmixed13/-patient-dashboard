@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กรอกข้อมูลผู้ป่วยรายเดือน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F9F8;
+    --panel: #0F4C46;
+    --panel-text: #EAF6F3;
+    --panel-text-dim: #A9CCC6;
+    --surface: #FFFFFF;
+    --ink: #14332E;
+    --muted: #5B6B68;
+    --accent: #12776B;
+    --accent-dark: #0B5D53;
+    --danger: #C0392B;
+    --success: #1F8A57;
+    --border: #DCE7E4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .shell {
+    display: grid;
+    grid-template-columns: 38% 62%;
+    min-height: 100vh;
+  }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Left panel ---------- */
+  .panel {
+    background: var(--panel);
+    color: var(--panel-text);
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .panel-top .icon { margin-bottom: 24px; }
+  .panel-top h1 {
+    font-size: 26px;
+    line-height: 1.35;
+    font-weight: 700;
+    margin: 0 0 12px;
+  }
+  .panel-top p {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--panel-text-dim);
+    margin: 0;
+    max-width: 34ch;
+  }
+  .recap {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-top: 32px;
+  }
+  .recap .label {
+    font-size: 12.5px;
+    color: var(--panel-text-dim);
+    margin-bottom: 8px;
+  }
+  .recap .value {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .recap .sub {
+    font-size: 13px;
+    color: var(--panel-text-dim);
+    margin-top: 4px;
+  }
+  .panel-bottom {
+    font-size: 13px;
+    color: var(--panel-text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-bottom a { color: var(--panel-text); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); }
+
+  /* ---------- Right panel (form) ---------- */
+  .form-side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .form-card {
+    width: 100%;
+    max-width: 460px;
+  }
+  .form-card h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .form-card .hint {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0 0 28px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 7px;
+  }
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .quick-fill {
+    font-size: 12.5px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .input-wrap { position: relative; }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    transition: border-color .15s ease;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input.valid { border-color: var(--success); }
+  input.invalid { border-color: var(--danger); }
+  .field-msg {
+    font-size: 12.5px;
+    margin-top: 6px;
+    min-height: 16px;
+  }
+  .field-msg.error { color: var(--danger); }
+  .field-msg.ok { color: var(--success); }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* honeypot: invisible to real users, present for bots */
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  button.submit {
+    width: 100%;
+    margin-top: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s ease, transform .05s ease;
+  }
+  button.submit:hover:not(:disabled) { background: var(--accent-dark); }
+  button.submit:active:not(:disabled) { transform: scale(0.99); }
+  button.submit:disabled { background: #B7C7C4; cursor: not-allowed; }
+
+  .banner {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+  }
+  .banner.show { display: block; }
+  .banner.error { background: #FDECEA; color: var(--danger); }
+  .banner.success { background: #E9F7EF; color: var(--success); }
+
+  /* success state swap */
+  .success-state {
+    display: none;
+    text-align: center;
+    padding: 20px 0 4px;
+  }
+  .success-state.show { display: block; }
+  .success-state .check {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--success);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+    animation: pop .35s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .success-state h3 { margin: 0 0 6px; font-size: 18px; }
+  .success-state p { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  .success-state button {
+    background: none;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .success-state .check { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <!-- ============ Left: context panel ============ -->
+    <div class="panel">
+      <div class="panel-top">
+        <div class="icon">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="4" width="24" height="32" rx="4" stroke="#EAF6F3" stroke-width="2"/>
+            <rect x="14" y="1" width="12" height="6" rx="2" fill="#EAF6F3"/>
+            <path d="M12 20h4l2.5-6 3 12 2.5-8h4" stroke="#8FE0D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 id="greeting">สวัสดี</h1>
+        <p>บันทึกจำนวนผู้ป่วยประจำเดือนไว้ที่นี่ ระบบจะรวบรวมข้อมูลให้อัตโนมัติและแสดงผลใน Dashboard</p>
+
+        <div class="recap" id="recapBox" style="display:none;">
+          <div class="label">บันทึกล่าสุด</div>
+          <div class="value" id="recapMonth">—</div>
+          <div class="sub" id="recapCount">—</div>
+        </div>
+      </div>
+
+      <div class="panel-bottom">
+        <span id="totalCountLabel">เริ่มบันทึกข้อมูลเดือนแรกของคุณ</span>
+        <a href="dashboard.html">ดู Dashboard</a>
+      </div>
+    </div>
+
+    <!-- ============ Right: form ============ -->
+    <div class="form-side">
+      <div class="form-card">
+        <h2>กรอกข้อมูลผู้ป่วยประจำเดือน</h2>
+        <p class="hint">กรอกให้ครบทั้ง 3 ช่อง ระบบจะตรวจสอบความถูกต้องให้ทันทีขณะพิมพ์</p>
+
+        <!-- ---- Success confirmation state ---- -->
+        <div class="success-state" id="successState">
+          <div class="check">✓</div>
+          <h3>บันทึกข้อมูลสำเร็จ</h3>
+          <p id="successDetail">ข้อมูลถูกเพิ่มเข้าระบบเรียบร้อยแล้ว</p>
+          <button id="addAnotherBtn">กรอกข้อมูลเดือนถัดไป</button>
+        </div>
+
+        <!-- ---- Form state ---- -->
+        <form id="entryForm" novalidate>
+          <div class="field">
+            <div class="field-label-row">
+              <label for="month">เดือน</label>
+              <button type="button" class="quick-fill" id="fillCurrentMonth">ใช้เดือนปัจจุบัน</button>
+            </div>
+            <div class="input-wrap">
+              <input type="text" id="month" placeholder="เช่น พ.ค. 2568" autocomplete="off">
+            </div>
+            <div class="field-msg" id="monthMsg"></div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="days">จำนวนวันในเดือน</label>
+              <div class="input-wrap">
+                <input type="number" id="days" placeholder="21" min="1" max="31">
+              </div>
+              <div class="field-msg" id="daysMsg"></div>
+            </div>
+            <div class="field">
+              <label for="patientCount">จำนวนผู้ป่วย (คน)</label>
+              <div class="input-wrap">
+                <input type="number" id="patientCount" placeholder="2130" min="0">
+              </div>
+              <div class="field-msg" id="patientMsg"></div>
+            </div>
+          </div>
+
+          <!-- Honeypot: real users never see or fill this. Bots that auto-fill every
+               field will fill it, and the backend silently rejects the submission. -->
+          <div class="hp-field" aria-hidden="true">
+            <label for="website">Leave this field empty</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <button type="submit" class="submit" id="submitBtn" disabled>บันทึกข้อมูล</button>
+          <div class="banner" id="banner" role="alert" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+
+    const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    // ---------- Greeting ----------
+    (function setGreeting() {
+      const h = new Date().getHours();
+      const g = h < 12 ? 'สวัสดีตอนเช้า' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+      document.getElementById('greeting').textContent = g;
+    })();
+
+    // ---------- Load last entry for the recap card ----------
+    apiGet('getData').then(function (res) {
+      if (res.success && res.data.length > 0) {
+        const last = res.data[res.data.length - 1];
+        document.getElementById('recapBox').style.display = 'block';
+        document.getElementById('recapMonth').textContent = last.month;
+        document.getElementById('recapCount').textContent = 'ผู้ป่วย ' + Number(last.patientCount).toLocaleString('th-TH') + ' คน';
+        document.getElementById('totalCountLabel').textContent = 'บันทึกไปแล้ว ' + res.data.length + ' เดือน';
+      }
+    }).catch(function () { /* recap is a nice-to-have; fail silently */ });
+
+    // ---------- Quick-fill current month ----------
+    document.getElementById('fillCurrentMonth').addEventListener('click', function () {
+      const now = new Date();
+      const buddhistYear = now.getFullYear() + 543;
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      document.getElementById('month').value = THAI_MONTHS[now.getMonth()] + ' ' + buddhistYear;
+      document.getElementById('days').value = daysInMonth;
+      validateField('month');
+      validateField('days');
+      updateSubmitState();
+    });
+
+    // ---------- Live validation ----------
+    const fields = ['month', 'days', 'patientCount'];
+
+    function validateField(id) {
+      const el = document.getElementById(id);
+      const msgEl = document.getElementById(id + 'Msg');
+      const val = el.value.trim();
+      let valid = true;
+      let message = '';
+
+      if (id === 'month') {
+        valid = val.length > 0;
+        message = valid ? '' : 'กรุณาระบุเดือน';
+      } else if (id === 'days') {
+        const n = Number(val);
+        valid = val !== '' && n >= 1 && n <= 31;
+        message = valid ? '' : 'ระบุจำนวนวัน 1–31';
+      } else if (id === 'patientCount') {
+        const n = Number(val);
+        valid = val !== '' && n >= 0;
+        message = valid ? '' : 'ระบุจำนวนผู้ป่วยเป็นตัวเลข';
+      }
+
+      el.classList.toggle('valid', valid && val !== '');
+      el.classList.toggle('invalid', !valid && val !== '');
+      msgEl.textContent = val !== '' ? message : '';
+      msgEl.className = 'field-msg' + (message ? ' error' : '');
+      return valid;
+    }
+
+    function updateSubmitState() {
+      const allValid = fields.every(function (id) {
+        const val = document.getElementById(id).value.trim();
+        return val !== '' && validateField(id);
+      });
+      document.getElementById('submitBtn').disabled = !allValid;
+    }
+
+    fields.forEach(function (id) {
+      document.getElementById(id).addEventListener('input', updateSubmitState);
+      document.getElementById(id).addEventListener('blur', function () { validateField(id); });
+    });
+
+    // ---------- Submit ----------
+    document.getElementById('entryForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const banner = document.getElementById('banner');
+      banner.className = 'banner';
+      banner.textContent = '';
+
+      const month = document.getElementById('month').value.trim();
+      const days = document.getElementById('days').value;
+      const patientCount = document.getElementById('patientCount').value;
+      const website = document.getElementById('website').value; // honeypot
+
+      btn.disabled = true;
+      btn.textContent = 'กำลังบันทึก...';
+
+      apiPost({
+        action: 'submitData',
+        month: month,
+        days: days,
+        patientCount: patientCount,
+        website: website
+      }).then(function (res) {
+        if (res.success) {
+          document.getElementById('entryForm').style.display = 'none';
+          document.getElementById('successDetail').textContent =
+            'เดือน ' + month + ' — ผู้ป่วย ' + Number(patientCount).toLocaleString('th-TH') + ' คน';
+          document.getElementById('successState').classList.add('show');
+        } else {
+          banner.className = 'banner error show';
+          banner.textContent = res.message || 'บันทึกข้อมูลไม่สำเร็จ';
+          btn.disabled = false;
+          btn.textContent = 'บันทึกข้อมูล';
+        }
+      }).catch(function (err) {
+        banner.className = 'banner error show';
+        banner.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+        btn.disabled = false;
+        btn.textContent = 'บันทึกข้อมูล';
+      });
+    });
+
+    document.getElementById('addAnotherBtn').addEventListener('click', function () {
+      document.getElementById('successState').classList.remove('show');
+      document.getElementById('entryForm').style.display = 'block';
+      document.getElementById('entryForm').reset();
+      fields.forEach(function (id) {
+        document.getElementById(id).classList.remove('valid', 'invalid');
+        document.getElementById(id + 'Msg').textContent = '';
+      });
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').textContent = 'บันทึกข้อมูล';
+      document.getElementById('month').focus();
+    });
+  </script>
+</body>
+</html>

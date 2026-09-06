@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - ข้อมูลผู้ป่วยรายเดือน</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="container wide">
+    <div class="topbar">
+      <a href="form.html">&larr; กลับไปกรอกข้อมูล</a>
+      <a href="#" id="logoutLink">ออกจากระบบ</a>
+    </div>
+    <h1>Dashboard: เปรียบเทียบจำนวนผู้ป่วยรายเดือน</h1>
+
+    <div class="threshold-box">
+      <label for="threshold" style="margin:0;">แจ้งเตือนถ้าจำนวนผู้ป่วยเกิน:</label>
+      <input type="number" id="threshold" value="2000" min="0">
+      <button id="applyThreshold" style="margin-top:0;">ใช้ค่านี้</button>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="chart" height="90"></canvas>
+    </div>
+
+    <h3 style="margin-top:28px;">ตารางข้อมูล</h3>
+    <div id="loading" class="loading">กำลังโหลดข้อมูล...</div>
+    <table id="dataTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>เดือน</th>
+          <th>จำนวนวัน</th>
+          <th>จำนวนผู้ป่วย</th>
+          <th>บันทึกเมื่อ</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    requireLogin();
+
+    document.getElementById('logoutLink').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    const ROWS_PER_PAGE = 5;
+    let allData = [];
+    let currentPage = 1;
+    let threshold = 2000;
+    let chartInstance = null;
+
+    function loadData() {
+      apiGet('getData').then(function (res) {
+        document.getElementById('loading').style.display = 'none';
+        if (!res.success) {
+          document.getElementById('loading').style.display = 'block';
+          document.getElementById('loading').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + res.message;
+          return;
+        }
+        allData = res.data;
+        document.getElementById('dataTable').style.display = 'table';
+        renderChart();
+        renderTable();
+      }).catch(function (err) {
+        document.getElementById('loading').textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+      });
+    }
+
+    function renderChart() {
+      const labels = allData.map(function (d) { return d.month; });
+      const values = allData.map(function (d) { return Number(d.patientCount); });
+      const bgColors = values.map(function (v) { return v > threshold ? '#dc2626' : '#2563eb'; });
+
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'จำนวนผู้ป่วย (คน)',
+            data: values,
+            backgroundColor: bgColors
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'เปรียบเทียบจำนวนผู้ป่วยแต่ละเดือน (สีแดง = เกินเกณฑ์ที่กำหนด)' }
+          },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function renderTable() {
+      const totalPages = Math.max(1, Math.ceil(allData.length / ROWS_PER_PAGE));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * ROWS_PER_PAGE;
+      const pageRows = allData.slice(start, start + ROWS_PER_PAGE);
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      pageRows.forEach(function (row) {
+        const tr = document.createElement('tr');
+        const isAlert = Number(row.patientCount) > threshold;
+        if (isAlert) tr.className = 'alert-row';
+        const dateStr = row.timestamp ? new Date(row.timestamp).toLocaleString('th-TH') : '';
+        tr.innerHTML =
+          '<td>' + row.month + (isAlert ? ' ⚠️' : '') + '</td>' +
+          '<td>' + row.days + '</td>' +
+          '<td>' + row.patientCount + '</td>' +
+          '<td>' + dateStr + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      const el = document.getElementById('pagination');
+      el.innerHTML = '';
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) btn.className = 'active';
+        btn.addEventListener('click', function () {
+          currentPage = i;
+          renderTable();
+        });
+        el.appendChild(btn);
+      }
+    }
+
+    document.getElementById('applyThreshold').addEventListener('click', function () {
+      const val = Number(document.getElementById('threshold').value);
+      if (!isNaN(val) && val >= 0) {
+        threshold = val;
+        renderChart();
+        renderTable();
+      }
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
